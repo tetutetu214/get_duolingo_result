@@ -49,4 +49,3 @@ yarn-error.log*
 # Build outputs
 build/
 dist/
-node_modules/
