@@ -1,0 +1,7 @@
+langextract
+google-auth
+google-auth-oauthlib
+google-api-python-client
+python-dotenv
+flask
+flask-cors
