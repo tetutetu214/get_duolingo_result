@@ -38,3 +38,15 @@ temp/
 
 # 新規追加
 token.json
+package-lock.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+build/
+dist/
+node_modules/
