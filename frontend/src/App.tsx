@@ -43,7 +43,6 @@ function App() {
     const totalLessons = data.reduce((sum, item) => sum + item.lessons, 0);
     const currentStreak = data.length > 0 ? data[0].streak : 0;
     
-    // 連続記録日数で割る（55日）
     const activeDays = currentStreak;
     
     return {
@@ -63,7 +62,17 @@ function App() {
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
+  // X軸の間引き間隔を計算
+  const calculateInterval = (dataLength: number) => {
+    if (dataLength <= 10) return 0;
+    if (dataLength <= 20) return 1;
+    if (dataLength <= 50) return Math.ceil(dataLength / 10);
+    return Math.ceil(dataLength / 12);
+  };
+
   const stats = calculateStats();
+  const chartData = [...data].reverse();
+  const xAxisInterval = calculateInterval(chartData.length);
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)', padding: '24px' }}>
@@ -139,9 +148,16 @@ function App() {
           <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '24px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>週次XP推移</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={[...data].reverse()}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatDate} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  interval={xAxisInterval}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
                 <YAxis />
                 <Tooltip 
                   labelFormatter={(label) => `日付: ${formatDate(label)}`}
@@ -161,9 +177,16 @@ function App() {
           <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '24px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>週次学習時間推移</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={[...data].reverse()}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatDate} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={formatDate}
+                  interval={xAxisInterval}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
                 <YAxis />
                 <Tooltip 
                   labelFormatter={(label) => `日付: ${formatDate(label)}`}
