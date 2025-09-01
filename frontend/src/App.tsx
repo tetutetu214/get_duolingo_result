@@ -41,9 +41,9 @@ function App() {
     const totalXP = data.reduce((sum, item) => sum + item.xp, 0);
     const totalMinutes = data.reduce((sum, item) => sum + item.minutes, 0);
     const totalLessons = data.reduce((sum, item) => sum + item.lessons, 0);
-    const currentStreak = data.length > 0 ? data[0].streak : 0;
+    const currentStreak = data.length > 0 ? Math.max(...data.map(item => item.streak)) : 0;
     
-    const activeDays = currentStreak;
+    const activeDays = data.length; // 実際のレポート数
     
     return {
       totalXP,
@@ -62,7 +62,6 @@ function App() {
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  // X軸の間引き間隔を計算
   const calculateInterval = (dataLength: number) => {
     if (dataLength <= 10) return 0;
     if (dataLength <= 20) return 1;
@@ -77,7 +76,6 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0fdf4, #eff6ff)', padding: '24px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        {/* ヘッダー */}
         <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '24px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -105,7 +103,6 @@ function App() {
           </div>
         </div>
 
-        {/* サマリーカード */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
           <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '20px' }}>
             <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 4px 0' }}>総XP</p>
@@ -143,7 +140,6 @@ function App() {
           </div>
         </div>
 
-        {/* チャート */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px' }}>
           <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '24px' }}>
             <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>週次XP推移</h3>
