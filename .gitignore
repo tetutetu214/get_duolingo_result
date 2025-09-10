@@ -38,7 +38,6 @@ temp/
 
 # 新規追加
 token.json
-package-lock.json
 
 # Node.js
 node_modules/
