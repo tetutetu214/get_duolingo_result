@@ -3,10 +3,13 @@
 SQLiteデータベース管理
 """
 import sqlite3
+import os
 from typing import List, Dict, Optional
 
 
-DB_PATH = "duolingo_data.db"
+# DBファイルのパスを絶対パスで指定
+DB_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(DB_DIR, "duolingo_data.db")
 
 
 def get_connection() -> sqlite3.Connection:

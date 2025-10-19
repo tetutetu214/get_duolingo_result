@@ -48,3 +48,10 @@ yarn-error.log*
 # Build outputs
 build/
 dist/
+
+# SOW
+*SOW.md
+
+# SQLite database files
+backend/*.db
+*.db
