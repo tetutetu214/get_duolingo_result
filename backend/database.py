@@ -5,9 +5,9 @@ SQLiteデータベース管理
 import sqlite3
 import os
 from typing import List, Dict, Optional
+from email.utils import parsedate_to_datetime
 
 
-# DBファイルのパスを絶対パスで指定
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(DB_DIR, "duolingo_data.db")
 
@@ -106,20 +106,23 @@ def insert_reports_bulk(reports: List[Dict]) -> int:
 
 
 def get_all_reports() -> List[Dict]:
-    """全レポート取得"""
+    """全レポート取得（日付降順）"""
     conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("""
         SELECT message_id, subject, date, xp, minutes, lessons, streak
         FROM reports
-        ORDER BY date DESC
     """)
     
     rows = cursor.fetchall()
     conn.close()
     
-    return [dict(row) for row in rows]
+    reports = [dict(row) for row in rows]
+    
+    reports.sort(key=lambda x: parsedate_to_datetime(x['date']), reverse=True)
+    
+    return reports
 
 
 def get_latest_date() -> Optional[str]:
@@ -130,14 +133,18 @@ def get_latest_date() -> Optional[str]:
     cursor.execute("""
         SELECT date
         FROM reports
-        ORDER BY date DESC
-        LIMIT 1
     """)
     
-    row = cursor.fetchone()
+    rows = cursor.fetchall()
     conn.close()
     
-    return row['date'] if row else None
+    if not rows:
+        return None
+    
+    dates = [dict(row)['date'] for row in rows]
+    dates.sort(key=lambda x: parsedate_to_datetime(x), reverse=True)
+    
+    return dates[0]
 
 
 def count_reports() -> int:

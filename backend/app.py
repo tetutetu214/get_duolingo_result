@@ -216,11 +216,34 @@ def extract_email_body(msg):
 
 @app.route('/api/duolingo/reports', methods=['GET'])
 def get_reports():
-    """Duolingoウィークリーレポート一覧取得（DB優先）"""
+    """Duolingoウィークリーレポート一覧取得（DB優先、空なら初回同期）"""
     try:
         print("📊 Duolingoレポート取得開始...")
         
         reports = get_all_reports()
+        
+        if len(reports) == 0:
+            print("🔄 DB空のため初回Gmail同期を実行...")
+            gmail_reports = get_duolingo_weekly_reports()
+            
+            if gmail_reports:
+                db_reports = []
+                for report in gmail_reports:
+                    if report.get('data'):
+                        db_reports.append({
+                            'message_id': report['message_id'],
+                            'subject': report['subject'],
+                            'date': report['date'],
+                            'xp': report['data'].get('xp', 0),
+                            'minutes': report['data'].get('minutes', 0),
+                            'lessons': report['data'].get('lessons', 0),
+                            'streak': report['data'].get('streak', 0)
+                        })
+                
+                new_count = insert_reports_bulk(db_reports)
+                print(f"✅ {new_count}件の新規レポートを保存しました")
+                
+                reports = get_all_reports()
         
         formatted_reports = []
         for report in reports:
@@ -239,7 +262,7 @@ def get_reports():
             'success': True,
             'data': formatted_reports,
             'count': len(formatted_reports),
-            'from_cache': True
+            'from_cache': len(reports) > 0
         })
         
     except Exception as e:
@@ -286,13 +309,25 @@ def sync_reports():
         
         print(f"✅ {new_count}件の新規レポートを保存しました")
         
+        all_reports = get_all_reports()
+        formatted_reports = []
+        for report in all_reports:
+            formatted_reports.append({
+                'date': report['date'],
+                'subject': report['subject'],
+                'xp': report['xp'],
+                'minutes': report['minutes'],
+                'lessons': report['lessons'],
+                'streak': report['streak']
+            })
+        
         return jsonify({
             'success': True,
             'sync_info': {
                 'new_records': new_count,
                 'total_records': count_reports()
             },
-            'data': get_all_reports()
+            'data': formatted_reports
         })
         
     except Exception as e:
@@ -310,7 +345,7 @@ def index():
         'message': 'Duolingo BI Dashboard API',
         'version': '3.0 - SQLite Cache',
         'endpoints': {
-            '/api/duolingo/reports': 'GET - ウィークリーレポート取得（DB）',
+            '/api/duolingo/reports': 'GET - ウィークリーレポート取得（DB優先）',
             '/api/duolingo/sync': 'POST - メール同期（Gmail → DB）'
         }
     })
