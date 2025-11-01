@@ -47,6 +47,24 @@ function App() {
     }
   };
 
+  const syncData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/duolingo/sync', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setData(result.data);
+      }
+    } catch (error) {
+      console.error('同期エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -80,26 +98,19 @@ function App() {
       currentStreak,
       avgMinutesPerDay: Math.round(avgMinutesPerWeek / 7),
       avgMinutesPerLesson: totalLessons > 0 ? Math.round((totalMinutes / totalLessons) * 10) / 10 : 0,
-      avgLessonsPerDay: Math.round(avgLessonsPerWeek / 7 * 10) / 10,
+      avgLessonsPerDay: Math.round((avgLessonsPerWeek / 7) * 10) / 10,
       avgXPPerWeek: Math.round(avgXPPerWeek)
     };
   };
 
   const calculateWeekComparisons = () => {
-    if (data.length < 2) {
-      return {
-        xp: { current: 0, previous: 0, diff: 0, percentage: 0, trend: 'same' as const },
-        minutes: { current: 0, previous: 0, diff: 0, percentage: 0, trend: 'same' as const },
-        lessons: { current: 0, previous: 0, diff: 0, percentage: 0, trend: 'same' as const },
-        avgMinutesPerLesson: { current: 0, previous: 0, diff: 0, percentage: 0, trend: 'same' as const }
-      };
-    }
+    if (data.length < 2) return null;
 
     const thisWeek = data[0];
     const lastWeek = data[1];
 
     const createComparison = (current: number, previous: number): WeekComparison => {
-      const diff = current - previous;
+      const diff = Math.round((current - previous) * 10) / 10;
       const percentage = previous !== 0 ? Math.round((diff / previous) * 100) : 0;
       const trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
       
@@ -161,7 +172,7 @@ function App() {
               <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', margin: 0 }}>Duolingo Learning Analytics</h1>
               <p style={{ color: '#6b7280', margin: '4px 0 0 0', fontSize: '14px' }}>Gmail API連携でリアルタイム学習進捗追跡</p>
             </div>
-            <button onClick={fetchData} disabled={loading} className="hover-enhance" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: loading ? '#9ca3af' : '#10b981', color: 'white', padding: '12px 20px', borderRadius: '12px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.3s ease' }}>
+            <button onClick={syncData} disabled={loading} className="hover-enhance" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: loading ? '#9ca3af' : '#10b981', color: 'white', padding: '12px 20px', borderRadius: '12px', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.3s ease' }}>
               <RefreshCw size={16} />
               <span>{loading ? 'データ取得中...' : 'Gmail同期'}</span>
             </button>
@@ -191,85 +202,85 @@ function App() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             {[
               { label: '1日平均XP', value: stats.avgXPPerWeek ? Math.round(stats.avgXPPerWeek / 7) : 0, color: colors.xp },
-              { label: '1日平均学習時間', value: `${stats.avgMinutesPerDay}分`, color: colors.time },
-              { label: '1日平均レッスン数', value: `${stats.avgLessonsPerDay}回`, color: colors.lesson },
+              { label: '1日の平均学習時間', value: `${stats.avgMinutesPerDay}分`, color: colors.time },
+              { label: '1日の平均レッスン数', value: `${stats.avgLessonsPerDay}回`, color: colors.lesson },
               { label: '1レッスン平均時間', value: `${stats.avgMinutesPerLesson}分`, color: colors.streak }
             ].map((item, index) => (
-              <div key={index} className="hover-enhance" style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', transition: 'all 0.3s ease', border: `2px solid ${item.color}` }}>
-                <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 4px 0' }}>{item.label}</p>
-                <p style={{ fontSize: '24px', fontWeight: 'bold', color: item.color, margin: 0 }}>{item.value}</p>
+              <div key={index} className="hover-enhance" style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', transition: 'all 0.3s ease', border: `2px solid ${item.color}`, opacity: hoveredCard === index ? 1 : 0.9 }} onMouseEnter={() => setHoveredCard(index)} onMouseLeave={() => setHoveredCard(null)}>
+                <p style={{ fontSize: '13px', margin: '0 0 4px 0', color: '#6b7280', fontWeight: '500' }}>{item.label}</p>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: item.color }}>{item.value}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '24px', marginBottom: '24px', border: '2px solid rgba(16, 185, 129, 0.2)' }}>
+        {weekComparisons && (
+          <div style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '24px', marginBottom: '24px', border: '2px solid rgba(59, 130, 246, 0.2)' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ChevronUp size={24} style={{ color: '#3b82f6' }} />
+              1日平均のサラダ比較
+            </h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              {[
+                { key: 'xp', label: '1日平均XP', data: weekComparisons.xp, color: colors.xp },
+                { key: 'minutes', label: '1日の平均学習時間', data: weekComparisons.minutes, color: colors.time },
+                { key: 'lessons', label: '1日の平均レッスン数', data: weekComparisons.lessons, color: colors.lesson },
+                { key: 'avgMinutes', label: '1レッスン平均時間', data: weekComparisons.avgMinutesPerLesson, color: colors.streak }
+              ].map((item, index) => (
+                <div key={index} className="hover-enhance" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', borderRadius: '16px', padding: '24px', border: `3px solid ${item.color}`, boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)', position: 'relative', overflow: 'hidden', opacity: hoveredCard === index + 10 ? 1 : 0.8 }} onMouseEnter={() => setHoveredCard(index + 10)} onMouseLeave={() => setHoveredCard(null)}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: `radial-gradient(circle, ${item.color}20 0%, transparent 70%)`, opacity: hoveredCard === index + 10 ? 0.8 : 0.4, transition: 'all 0.3s ease' }} />
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: item.color, margin: 0 }}>{item.label}</h3>
+                    {getTrendIcon(item.data.trend)}
+                  </div>
+                  
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>
+                          {typeof item.data.current === 'number' && item.data.current % 1 !== 0 ? item.data.current.toFixed(1) : item.data.current.toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                          {item.key === 'minutes' ? '分' : item.key === 'lessons' ? '回' : item.key === 'avgMinutes' ? '分' : item.key === 'xp' ? 'XP' : ''}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '16px', color: getTrendColor(item.data.trend), fontWeight: '600' }}>
+                        {item.data.diff > 0 ? '+' : ''}{typeof item.data.diff === 'number' && item.data.diff % 1 !== 0 ? item.data.diff.toFixed(1) : item.data.diff} 
+                        ({item.data.percentage > 0 ? '+' : ''}{item.data.percentage}%)
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                      先週: {typeof item.data.previous === 'number' && item.data.previous % 1 !== 0 ? item.data.previous.toFixed(1) : item.data.previous.toLocaleString()}
+                      {item.key === 'minutes' ? '分' : item.key === 'lessons' ? '回' : item.key === 'avgMinutes' ? '分' : item.key === 'xp' ? 'XP' : ''}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="chart-hover-enhance" style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '24px', border: '2px solid rgba(139, 92, 246, 0.2)' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ChevronUp size={24} style={{ color: '#10b981' }} />
-            1日平均での先週比較
+            <ChevronUp size={24} style={{ color: '#8b5cf6' }} />
+            学習タイムチャート
           </h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-            {[
-              { key: 'xp', label: '1日平均XP', data: weekComparisons.xp, color: colors.xp },
-              { key: 'minutes', label: '1日平均学習時間', data: weekComparisons.minutes, color: colors.time },
-              { key: 'lessons', label: '1日平均レッスン数', data: weekComparisons.lessons, color: colors.lesson },
-              { key: 'avgMinutes', label: '1レッスン平均時間', data: weekComparisons.avgMinutesPerLesson, color: colors.streak }
-            ].map((item, index) => (
-              <div key={item.key} className="hover-enhance" onMouseEnter={() => setHoveredCard(index)} onMouseLeave={() => setHoveredCard(null)} style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', border: `1px solid ${item.color}33`, position: 'relative', transition: 'all 0.3s ease' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.min(Math.abs(item.data.percentage) * 3, 100)}%`, background: `linear-gradient(90deg, ${getTrendColor(item.data.trend)}22, transparent)`, borderRadius: '12px 0 0 12px', opacity: hoveredCard === index ? 0.8 : 0.4, transition: 'all 0.3s ease' }} />
-                
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: item.color, margin: 0 }}>{item.label}</h3>
-                  {getTrendIcon(item.data.trend)}
-                </div>
-                
-                <div style={{ position: 'relative' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                      <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>
-                        {typeof item.data.current === 'number' && item.data.current % 1 !== 0 ? item.data.current.toFixed(1) : item.data.current.toLocaleString()}
-                      </span>
-                      <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                        {item.key === 'minutes' ? '分' : item.key === 'lessons' ? '回' : item.key === 'avgMinutes' ? '分' : item.key === 'xp' ? 'XP' : ''}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '16px', color: getTrendColor(item.data.trend), fontWeight: '600' }}>
-                      {item.data.diff > 0 ? '+' : ''}{typeof item.data.diff === 'number' && item.data.diff % 1 !== 0 ? item.data.diff.toFixed(1) : item.data.diff} 
-                      ({item.data.percentage > 0 ? '+' : ''}{item.data.percentage}%)
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                    先週: {typeof item.data.previous === 'number' && item.data.previous % 1 !== 0 ? item.data.previous.toFixed(1) : item.data.previous.toLocaleString()}
-                    {item.key === 'minutes' ? '分' : item.key === 'lessons' ? '回' : item.key === 'avgMinutes' ? '分' : item.key === 'xp' ? 'XP' : ''}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '24px', marginBottom: '24px', border: '2px solid rgba(16, 185, 129, 0.2)', width: 'calc(100% - 60px)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ChevronUp size={24} style={{ color: '#10b981' }} />
-            学習推移チャート
-          </h2>
-
-          <div className="chart-hover-enhance" style={{ background: '#ffffff', borderRadius: '12px', padding: '20px', border: '2px solid rgba(16, 185, 129, 0.2)', overflow: 'hidden' }}>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData} margin={{ top: 10, right: 50, left: 10, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="date" tickFormatter={formatDate} stroke="#6b7280" fontSize={11} angle={-45} textAnchor="end" height={60} />
-                <YAxis yAxisId="left" stroke={colors.xp} fontSize={11} />
-                <YAxis yAxisId="right" orientation="right" stroke="#6b7280" fontSize={11} />
-                <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }} labelFormatter={(label) => `日付: ${formatDate(label)}`} />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Line yAxisId="left" type="monotone" dataKey="xp" stroke={colors.xp} strokeWidth={3} dot={{ fill: colors.xp, r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="minutes" stroke={colors.time} strokeWidth={3} dot={{ fill: colors.time, r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="lessons" stroke={colors.lesson} strokeWidth={3} dot={{ fill: colors.lesson, r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" tickFormatter={formatDate} stroke="#6b7280" style={{ fontSize: '12px' }} />
+              <YAxis yAxisId="left" stroke="#6b7280" style={{ fontSize: '12px' }} />
+              <YAxis yAxisId="right" orientation="right" stroke="#6b7280" style={{ fontSize: '12px' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+              <Legend />
+              <Line yAxisId="left" type="monotone" dataKey="lessons" stroke={colors.lesson} strokeWidth={3} name="レッスン" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              <Line yAxisId="right" type="monotone" dataKey="minutes" stroke={colors.time} strokeWidth={3} name="分" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              <Line yAxisId="right" type="monotone" dataKey="xp" stroke={colors.xp} strokeWidth={3} name="XP" dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
