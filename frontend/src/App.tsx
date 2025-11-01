@@ -151,7 +151,34 @@ function App() {
 
   const stats = calculateStats();
   const weekComparisons = calculateWeekComparisons();
-  const chartData = [...data].reverse();
+  const prepareChartData = () => {
+      // 1. データを逆順（古い順）にする
+      const reversedData = [...data].reverse();
+      const dataLength = reversedData.length;
+      const maxPoints = 20;
+      
+      // 2. データが0件なら空配列を返す
+      if (dataLength === 0) return [];
+      
+      // 3. [修正] データの数がmaxPoints以下なら、間引かずにそのまま返す
+      if (dataLength <= maxPoints) {
+        return reversedData;
+      }
+      
+      // 4. [元のロジック] データの数がmaxPointsを超える場合のみ、間引き処理を行う
+      const step = (dataLength - 1) / (maxPoints - 1);
+      const sampledData: DuolingoData[] = [];
+      
+      // ループは maxPoints 回
+      for (let i = 0; i < maxPoints; i++) {
+        const index = Math.round(i * step);
+        if (reversedData[index]) {
+          sampledData.push(reversedData[index]);
+        }
+      }
+      return sampledData;
+    };
+  const chartData = prepareChartData();
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', padding: '24px' }}>
